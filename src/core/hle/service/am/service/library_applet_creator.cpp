@@ -222,6 +222,7 @@ Result ILibraryAppletCreator::CreateLibraryAppletEx(
     LibraryAppletMode library_applet_mode, u64 thread_id) {
     LOG_DEBUG(Service_AM, "called with applet_id={} applet_mode={} thread_id={}", applet_id,
               library_applet_mode, thread_id);
+    applet_id = FromNx2AppletId(applet_id);
 
     std::shared_ptr<ILibraryAppletAccessor> library_applet;
     if (ShouldCreateGuestApplet(applet_id)) {
