@@ -94,7 +94,10 @@ enum class AppletId : u32 {
     LoginShare = 0x18,
     WebAuth = 0x19,
     MyPage = 0x1A,
-    Lhub = 0x35
+    Lhub = 0x35,
+    // Switch 2 SDK ids for the same applets (from PokeDinner fork).
+    SoftwareKeyboardNx2 = 0x01020011,
+    ControllerNx2 = 0x0100000C,
 };
 
 enum class AppletProgramId : u64 {
