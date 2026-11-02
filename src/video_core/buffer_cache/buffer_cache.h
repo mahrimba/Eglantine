@@ -282,6 +282,7 @@ bool BufferCache<P>::DMACopy(GPUVAddr src_address, GPUVAddr dest_address, u64 am
         if (DownloadsAtFence(new_base_address, size)) {
             uncommitted_gpu_modified_ranges.Add(new_base_address, size);
         } else {
+            QueueDownload(new_base_address, size);
             ArmReadTraps(new_base_address, size);
         }
     };
@@ -778,6 +779,26 @@ bool BufferCache<P>::IsRegionGpuModified(DAddr addr, size_t size) {
     // One lookup instead of visiting every range inside (~4% of the GPU thread for title 1's
     // inline uploads once GPU-written ranges are no longer cleared by downloads).
     return gpu_modified_ranges.Intersects(addr, size);
+}
+
+template <class P>
+void BufferCache<P>::NoteCpuRead(DAddr addr, size_t size) {
+    if (AsyncBufferDownloads()) {
+        return;
+    }
+    size_t covered = 0;
+    cpu_read_ranges.ForEachInRange(addr, size,
+                                   [&](DAddr start, DAddr end) { covered += end - start; });
+    if (covered >= size) {
+        return;
+    }
+    cpu_read_ranges.Add(addr, size);
+    if (Nx2Profile::Enabled()) {
+        static u64 noted{};
+        if ((++noted & 255) == 1) {
+            LOG_INFO(HW_GPU, "CPU-read buffer pages noted: {} (latest {:#x})", noted, addr);
+        }
+    }
 }
 
 template <class P>
@@ -1608,6 +1629,7 @@ void BufferCache<P>::MarkWrittenBuffer(BufferId buffer_id, DAddr device_addr, u3
     if (DownloadsAtFence(device_addr, size)) {
         uncommitted_gpu_modified_ranges.Add(device_addr, size);
     } else {
+        QueueDownload(device_addr, size);
         ArmReadTraps(device_addr, size);
     }
 }
